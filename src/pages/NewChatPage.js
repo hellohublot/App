@@ -1,6 +1,6 @@
 import _ from 'underscore';
 import React, {Component} from 'react';
-import {View} from 'react-native';
+import {View,TouchableOpacity} from 'react-native';
 import PropTypes from 'prop-types';
 import {withOnyx} from 'react-native-onyx';
 import OptionsSelector from '../components/OptionsSelector';
@@ -8,6 +8,8 @@ import * as OptionsListUtils from '../libs/OptionsListUtils';
 import ONYXKEYS from '../ONYXKEYS';
 import styles from '../styles/styles';
 import * as Report from '../libs/actions/Report';
+import addWindowScrollListener from '../libs/WindowScroll/'
+import * as Browser from '../libs/Browser/'
 import CONST from '../CONST';
 import withWindowDimensions, {windowDimensionsPropTypes} from '../components/withWindowDimensions';
 import HeaderWithCloseButton from '../components/HeaderWithCloseButton';
@@ -54,6 +56,11 @@ class NewChatPage extends Component {
         this.createChat = this.createChat.bind(this);
         this.createGroup = this.createGroup.bind(this);
         this.excludedGroupEmails = _.without(CONST.EXPENSIFY_EMAILS, CONST.EMAIL.CONCIERGE);
+        if (Browser.isMobile() && Browser.getBrowser() == CONST.BROWSER.SAFARI) {
+        	this.followWindowScrollContainer = React.createRef()
+        	this.handlerWindowScroll = this.handlerWindowScroll.bind(this);
+        	this.removeWindowScrollListener = addWindowScrollListener(this.handlerWindowScroll)
+        }
 
         const {
             recentReports,
@@ -74,6 +81,14 @@ class NewChatPage extends Component {
             selectedOptions: [],
             userToInvite,
         };
+    }
+
+    componentWillUnmount() {
+    	this.removeWindowScrollListener()
+    }
+
+    handlerWindowScroll(e) {
+    	this.followWindowScrollContainer.current.style.top = `${-document.documentElement.scrollTop}pt`
     }
 
     /**
@@ -206,7 +221,7 @@ class NewChatPage extends Component {
         return (
             <ScreenWrapper>
                 {({didScreenTransitionEnd}) => (
-                    <>
+                    <View style={styles.flex1} ref={this.followWindowScrollContainer}>
                         <HeaderWithCloseButton
                             title={this.props.isGroupChat
                                 ? this.props.translate('sidebarScreen.newGroup')
@@ -252,7 +267,7 @@ class NewChatPage extends Component {
                                 />
                             )}
                         </View>
-                    </>
+                    </View>
                 )}
             </ScreenWrapper>
         );
